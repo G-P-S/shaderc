@@ -1,0 +1,70 @@
+{
+  "version": "1.0",
+  "info": {
+    "type": "lib",
+    "visibility": "public",
+    "platforms": [
+      "macos",
+      "windows",
+      "linux"
+    ]
+  },
+  "deps": [
+    {
+      "url": "git@github.com:G-P-S/googletest.git",
+      "note": "googletest unit testing framework",
+      "version": "master",
+      "info": {
+        "type": "lib",
+        "visibility": "public",
+        "platforms": [
+          "macos",
+          "windows",
+          "linux"
+        ]
+      }
+    },
+    {
+      "url": "git@github.com:google/glslang.git",
+      "note": "glsl language parser",
+      "version": "master",
+      "info": {
+        "type": "lib",
+        "visibility": "public",
+        "platforms": [
+          "macos",
+          "windows",
+          "linux"
+        ]
+      }
+    },
+    {
+      "url": "git@github.com:KhronosGroup/SPIRV-Tools.git",
+      "note": "SPIR-V Core toolset",
+      "version": "master",
+      "info": {
+        "type": "lib",
+        "visibility": "public",
+        "platforms": [
+          "macos",
+          "windows",
+          "linux"
+        ]
+      }
+    },
+    {
+      "url": "git@github.com:KhronosGroup/SPIRV-Headers.git",
+      "note": "SPIR-V language definition headers",
+      "version": "master",
+      "info": {
+        "type": "lib",
+        "visibility": "public",
+        "platforms": [
+          "macos",
+          "windows",
+          "linux"
+        ]
+      }
+    }
+  ]
+}
