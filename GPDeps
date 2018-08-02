@@ -13,7 +13,7 @@
     {
       "url": "git@github.com:G-P-S/googletest.git",
       "note": "googletest unit testing framework",
-      "version": "master",
+      "version": "gp",
       "info": {
         "type": "lib",
         "visibility": "public",
