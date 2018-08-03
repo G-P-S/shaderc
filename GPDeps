@@ -25,9 +25,9 @@
       }
     },
     {
-      "url": "git@github.com:google/glslang.git",
+      "url": "git@github.com:G-P-S/glslang.git",
       "note": "glsl language parser",
-      "version": "master",
+      "version": "gp",
       "info": {
         "type": "lib",
         "visibility": "public",
@@ -39,9 +39,9 @@
       }
     },
     {
-      "url": "git@github.com:KhronosGroup/SPIRV-Tools.git",
+      "url": "git@github.com:G-P-S/SPIRV-Tools.git",
       "note": "SPIR-V Core toolset",
-      "version": "master",
+      "version": "gp",
       "info": {
         "type": "lib",
         "visibility": "public",
@@ -53,9 +53,9 @@
       }
     },
     {
-      "url": "git@github.com:KhronosGroup/SPIRV-Headers.git",
+      "url": "git@github.com:G-P-S/SPIRV-Headers.git",
       "note": "SPIR-V language definition headers",
-      "version": "master",
+      "version": "gp",
       "info": {
         "type": "lib",
         "visibility": "public",
