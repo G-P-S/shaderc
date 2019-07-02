@@ -1,23 +1,22 @@
 # Shaderc
 
-[![Linux and Mac Build Status](https://travis-ci.org/google/shaderc.svg)](https://travis-ci.org/google/shaderc "Linux and Mac Build Status")
-[![Windows Build status](https://ci.appveyor.com/api/projects/status/g6c372blna7vnk1l?svg=true)](https://ci.appveyor.com/project/dneto0/shaderc "Windows Build Status")
-[![Coverage Status](https://coveralls.io/repos/google/shaderc/badge.svg?branch=master&service=github)](https://coveralls.io/github/google/shaderc?branch=master)
-
-Latest Build Status by Google:
-
-<img alt="Linux" src="kokoro/img/linux.png" width="20px" height="20px" hspace="2px"/>![Linux Build Status](https://storage.googleapis.com/shaderc/badges/build_status_linux_release.svg)
-<img alt="MacOS" src="kokoro/img/macos.png" width="20px" height="20px" hspace="2px"/>![MacOS Build Status](https://storage.googleapis.com/shaderc/badges/build_status_macos_release.svg)
-<img alt="Windows" src="kokoro/img/windows.png" width="20px" height="20px" hspace="2px"/>![Windows Build Status](https://storage.googleapis.com/shaderc/badges/build_status_windows_release.svg)
-
 A collection of tools, libraries and tests for shader compilation.
 At the moment it includes:
 
 - [`glslc`](glslc), a command line compiler for GLSL/HLSL to SPIR-V, and
-- [`libshaderc`](libshaderc), a library API for doing the same.
+- [`libshaderc`](libshaderc), a library API for accessing `glslc` functionality.
+- [`spvc`](spvc), a command line wrapper around the SPIR-V to GLSL/HLSL/MSL
+  compiler [SPIRV-Cross][spirv-cross], and
+- [`libshaderc_spvc`](libshaderc_spvc), a library API for accessing `spvc`
+  functionality.
 
-Shaderc wraps around core functionality in [glslang][khr-glslang]
-and [SPIRV-Tools][spirv-tools].  Shaderc aims to
+**Note:** The fact that that `libshaderc` is not named `libshaderc_glslc` is a
+quirk of history, and a known inconsistancy. Changing it would require a
+significant amount of renaming and breaking of downstream projects, so it is
+being left as is.
+
+`glslc` wraps around core functionality in [glslang][khr-glslang]
+and [SPIRV-Tools][spirv-tools]. `glslc` and its library aims to
 to provide:
 * a command line compiler with GCC- and Clang-like usage, for better
   integration with build systems
@@ -25,6 +24,24 @@ to provide:
 * an API supporting standard concurrency patterns across multiple
   operating systems
 * increased functionality such as file `#include` support
+
+`spvc` wraps around core functionality in [spirv-cross][spirv-cross]
+and [SPIRV-Tools][spirv-tools]. `spirv` and its library aims to
+provide:
+
+* validation and transformation of inputs before cross-compiling
+* an API designed around integration with specific projects like [Dawn][dawn]
+
+**Note:** `spvc` and its library are WIP and optional artifacts that are by
+default disabled in the build. How to enabled is detailed below.
+
+## Downloads
+
+<img alt="Linux" src="kokoro/img/linux.png" width="20px" height="20px" hspace="2px"/>[![Linux Build Status](https://storage.googleapis.com/shaderc/badges/build_status_linux_clang_release.svg)](https://storage.googleapis.com/shaderc/badges/build_link_linux_clang_release.html)
+<img alt="MacOS" src="kokoro/img/macos.png" width="20px" height="20px" hspace="2px"/>[![MacOS Build Status](https://storage.googleapis.com/shaderc/badges/build_status_macos_clang_release.svg)](https://storage.googleapis.com/shaderc/badges/build_link_macos_clang_release.html)
+<img alt="Windows" src="kokoro/img/windows.png" width="20px" height="20px" hspace="2px"/>[![Windows Build Status](https://storage.googleapis.com/shaderc/badges/build_status_windows_vs2017_release.svg)](https://storage.googleapis.com/shaderc/badges/build_link_windows_vs2017_release.html)
+
+[More downloads](downloads.md)
 
 ## Status
 
@@ -36,6 +53,7 @@ Shaderc has been shipping in the
 [Android NDK](https://developer.android.com/ndk/index.html) since version r12b.
 (The NDK build uses sources from https://android.googlesource.com/platform/external/shaderc/.
 Those repos are downstream from GitHub.)
+We currently require r18b.
 
 For licensing terms, please see the [`LICENSE`](LICENSE) file.  If interested in
 contributing to this project, please see [`CONTRIBUTING.md`](CONTRIBUTING.md).
@@ -58,13 +76,6 @@ for more information. See also the [`AUTHORS`](AUTHORS) and
 - `utils/`: utility scripts for Shaderc
 
 Shaderc depends on glslang, the Khronos reference compiler for GLSL.
-Sometimes a change updates both Shaderc and glslang.  In that case the
-glslang change will appear in [google/glslang][google-glslang]
-before it appears upstream in [KhronosGroup/glslang][khr-glslang]
-We intend to upstream all changes to glslang. We maintain the separate
-copy only to stage those changes for review, and to provide something for
-Shaderc to build against in the meantime.  Please see
-[DEVELOPMENT.howto.md](DEVELOPMENT.howto.md) for more details.
 
 Shaderc depends on [SPIRV-Tools][spirv-tools] for assembling, disassembling,
 and transforming SPIR-V binaries.
@@ -77,19 +88,17 @@ Shaderc into.
 
 ## Getting and building Shaderc
 
-**Experimental:** On Windows, instead of building from source, you can get the
-artifacts built by [Appveyor][appveyor] for the top of the tree of the master
-branch under the "Artifacts" tab of a certain job.
+**If you only want prebuilt executables or libraries, see the
+[Downloads](#downloads) section.**
+
+The rest of this section describes how to build Shaderc from sources.
 
 1) Check out the source code:
 
 ```sh
 git clone https://github.com/google/shaderc $SOURCE_DIR
-cd $SOURCE_DIR/third_party
-git clone https://github.com/google/googletest.git
-git clone https://github.com/google/glslang.git
-git clone https://github.com/KhronosGroup/SPIRV-Tools.git spirv-tools
-git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-headers
+cd $SOURCE_DIR
+./utils/git-sync-deps
 cd $SOURCE_DIR/
 ```
 
@@ -158,7 +167,7 @@ For building, testing, and profiling Shaderc, the following tools should be
 installed regardless of your OS:
 
 - [CMake](http://www.cmake.org/): for generating compilation targets.
-- [Python](http://www.python.org/): for utility scripts and running the test suite.
+- [Python 3](http://www.python.org/): for utility scripts and running the test suite.
 
 On Linux, the following tools should be installed:
 
@@ -215,6 +224,14 @@ test.vert
 /code $ glslc -c -o - test.vert | spirv-dis
 ```
 
+### Building spvc
+
+The value `SHADERC_ENABLE_SPVC` in `CMakeLists.txt` must be set to `ON` to
+enable building `spvc`.
+
+This can be achieved by either editing the file in your checkout, or passing
+`-DSHADERC_ENABLE_SPVC=ON` to `cmake` to set the value.
+
 ## Bug tracking
 
 We track bugs using GitHub -- click on the "Issues" button on
@@ -244,8 +261,9 @@ older versions of Shaderc and its dependencies.
 * **Rust:** [shaderc-rs][shaderc-rs]
 
 [khr-glslang]: https://github.com/KhronosGroup/glslang
-[google-glslang]: https://github.com/google/glslang
 [spirv-tools]: https://github.com/KhronosGroup/SPIRV-Tools
+[spirv-cross]: https://github.com/KhronosGroup/SPIRV-Cross
 [pyshaderc]: https://github.com/realitix/pyshaderc
 [shaderc-rs]: https://github.com/google/shaderc-rs
 [appveyor]: https://ci.appveyor.com/project/dneto0/shaderc
+[dawn]: https://dawn.googlesource.com/dawn

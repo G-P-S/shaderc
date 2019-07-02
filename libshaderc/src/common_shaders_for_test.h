@@ -176,6 +176,50 @@ const char kComputeOnlyShaderWithPragma[] =
     "    uvec3 temp = gl_WorkGroupID;\n"
     "}";
 
+// NV mesh shader without #pragma.
+const char kNVMeshShader[] =
+    "#version 450\n"
+    "#extension GL_NV_mesh_shader : enable\n"
+    "layout(local_size_x=8) in;\n"
+    "layout(max_vertices=5) out;\n"
+    "layout(max_primitives=10) out;\n"
+    "layout(triangles) out;\n"
+    "void main() {\n"
+    "  gl_MeshVerticesNV[gl_LocalInvocationID.x].gl_Position = vec4(0.0);\n"
+    "}\n";
+
+// NV mesh shader with #pragma annotation.
+const char kNVMeshShaderWithPragma[] =
+    "#version 450\n"
+    "#extension GL_NV_mesh_shader : enable\n"
+    "#pragma shader_stage(mesh)\n"
+    "layout(local_size_x=8) in;\n"
+    "layout(max_vertices=5) out;\n"
+    "layout(max_primitives=10) out;\n"
+    "layout(triangles) out;\n"
+    "void main() {\n"
+    "  gl_MeshVerticesNV[gl_LocalInvocationID.x].gl_Position = vec4(0.0);\n"
+    "}\n";
+
+// NV task shader without #pragma annotation.
+const char kNVTaskShader[] =
+    "#version 450\n"
+    "#extension GL_NV_mesh_shader : enable\n"
+    "layout(local_size_x=8) in;\n"
+    "void main() {\n"
+    "  gl_TaskCountNV = 2;\n"
+    "}\n";
+
+// NV task shader with #pragma annotation.
+const char kNVTaskShaderWithPragma[] =
+    "#version 450\n"
+    "#extension GL_NV_mesh_shader : enable\n"
+    "#pragma shader_stage(task)\n"
+    "layout(local_size_x=8) in;\n"
+    "void main() {\n"
+    "  gl_TaskCountNV = 2;\n"
+    "}\n";
+
 // Vertex only shader with invalid #pragma annotation.
 const char kVertexOnlyShaderWithInvalidPragma[] =
     "#version 310 es\n"
@@ -194,6 +238,18 @@ const char* kMinimalShaderDisassemblySubstrings[] = {
 
     "               OpCapability Shader\n",
     "          %1 = OpExtInstImport \"GLSL.std.450\"\n",
+    "               OpMemoryModel Logical GLSL450\n",
+    "               OpReturn\n",
+    "               OpFunctionEnd\n"};
+
+const char* kMinimalShaderDebugInfoDisassemblySubstrings[] = {
+    "; SPIR-V\n"
+    "; Version: 1.0\n"
+    "; Generator: Google Shaderc over Glslang; 7\n"
+    "; Bound:",
+
+    "               OpCapability Shader\n",
+    "          %2 = OpExtInstImport \"GLSL.std.450\"\n",
     "               OpMemoryModel Logical GLSL450\n",
     "               OpReturn\n",
     "               OpFunctionEnd\n"};
@@ -259,6 +315,44 @@ const char kGlslShaderComputeSubgroupBarrier[] =
        #extension GL_KHR_shader_subgroup_basic : enable
        void main() { subgroupBarrier(); })";
 
+#ifdef NV_EXTENSIONS
+// A GLSL task shader using a regular barrier.
+const char kGlslShaderTaskBarrier[] =
+    R"(#version 450
+       #extension GL_NV_mesh_shader : enable
+       layout(local_size_x = 32) in;
+       void main() { barrier(); })";
+
+// A GLSL task shader using the Subgroups feature.
+const char kGlslShaderTaskSubgroupBarrier[] =
+    R"(#version 450
+       #extension GL_NV_mesh_shader : enable
+       #extension GL_KHR_shader_subgroup_basic : enable
+       layout(local_size_x = 32) in;
+       void main() { subgroupBarrier(); })";
+
+// A GLSL mesh shader using a regular barrier.
+const char kGlslShaderMeshBarrier[] =
+    R"(#version 450
+       #extension GL_NV_mesh_shader : enable
+       layout(local_size_x = 32) in;
+       layout(max_vertices=81) out;
+       layout(max_primitives=32) out;
+       layout(triangles) out;
+       void main() { barrier(); })";
+
+// A GLSL mesh shader using the Subgroups feature.
+const char kGlslShaderMeshSubgroupBarrier[] =
+    R"(#version 450
+       #extension GL_NV_mesh_shader : enable
+       #extension GL_KHR_shader_subgroup_basic : enable
+       layout(local_size_x = 32) in;
+       layout(max_vertices=81) out;
+       layout(max_primitives=32) out;
+       layout(triangles) out;
+       void main() { subgroupBarrier(); })";
+#endif
+
 const char kGlslMultipleFnShader[] =
     R"(#version 450
        layout(location=0) flat in  int inVal;
@@ -271,6 +365,47 @@ const char kHlslShaderWithCounterBuffer[] =
        float4 main() : SV_Target0 {
          return float4(Ainc.IncrementCounter(), 0, 0, 0);
        })";
+
+const char kHlslWaveActiveSumeComputeShader[] =
+  R"(struct S { uint val; uint result; };
+
+     [[vk::binding(0,0)]]
+     RWStructuredBuffer<S> MyBuffer;
+
+     [numthreads(32, 1, 1)]
+     void main(uint3 id : SV_DispatchThreadID) {
+       MyBuffer[id.x].result = WaveActiveSum(MyBuffer[id.x].val);
+     })";
+
+const char kHlslMemLayoutResourceSelect[] =
+    R"(cbuffer Foo { float a; float3 b; }
+
+       [[vk::binding(0,0)]]
+       Texture2D Tex;
+       [[vk::binding(1,0)]]
+       SamplerState Sampler1;
+       [[vk::binding(2,0)]]
+       SamplerState Sampler2;
+
+       static const int val = 42;
+
+       float4 main() : SV_Target {
+         SamplerState samp;
+
+         if (val > 5)
+           samp = Sampler1;
+         else
+           samp = Sampler2;
+
+         return Tex.Sample(samp, float2(0.5, 0.5)) + float4(a, b);
+       })";
+
+const char kGlslShaderWithClamp[] =
+    R"(#version 450
+    layout(location=0) in vec4 i;
+    layout(location=0) out vec4 o;
+    void main() { o = clamp(i, vec4(0.5), vec4(1.0)); }
+    )";
 
 #ifdef __cplusplus
 }
