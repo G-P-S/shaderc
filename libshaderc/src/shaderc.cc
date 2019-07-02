@@ -56,6 +56,26 @@ EShLanguage GetForcedStage(shaderc_shader_kind kind) {
       return EShLangTessControl;
     case shaderc_glsl_tess_evaluation_shader:
       return EShLangTessEvaluation;
+
+#ifdef NV_EXTENSIONS
+    case shaderc_glsl_raygen_shader:
+      return EShLangRayGenNV;
+    case shaderc_glsl_anyhit_shader:
+      return EShLangAnyHitNV;
+    case shaderc_glsl_closesthit_shader:
+      return EShLangClosestHitNV;
+    case shaderc_glsl_miss_shader:
+      return EShLangMissNV;
+    case shaderc_glsl_intersection_shader:
+      return EShLangIntersectNV;
+    case shaderc_glsl_callable_shader:
+      return EShLangCallableNV;
+    case shaderc_glsl_task_shader:
+      return EShLangTaskNV;
+    case shaderc_glsl_mesh_shader:
+      return EShLangMeshNV;
+#endif
+
     case shaderc_glsl_infer_from_source:
     case shaderc_glsl_default_vertex_shader:
     case shaderc_glsl_default_fragment_shader:
@@ -63,6 +83,16 @@ EShLanguage GetForcedStage(shaderc_shader_kind kind) {
     case shaderc_glsl_default_geometry_shader:
     case shaderc_glsl_default_tess_control_shader:
     case shaderc_glsl_default_tess_evaluation_shader:
+#ifdef NV_EXTENSIONS
+    case shaderc_glsl_default_raygen_shader:
+    case shaderc_glsl_default_anyhit_shader:
+    case shaderc_glsl_default_closesthit_shader:
+    case shaderc_glsl_default_miss_shader:
+    case shaderc_glsl_default_intersection_shader:
+    case shaderc_glsl_default_callable_shader:
+    case shaderc_glsl_default_task_shader:
+    case shaderc_glsl_default_mesh_shader:
+#endif
     case shaderc_spirv_assembly:
       return EShLangCount;
   }
@@ -120,6 +150,16 @@ class StageDeducer {
       case shaderc_glsl_tess_control_shader:
       case shaderc_glsl_tess_evaluation_shader:
       case shaderc_glsl_infer_from_source:
+#ifdef NV_EXTENSIONS
+      case shaderc_glsl_raygen_shader:
+      case shaderc_glsl_anyhit_shader:
+      case shaderc_glsl_closesthit_shader:
+      case shaderc_glsl_miss_shader:
+      case shaderc_glsl_intersection_shader:
+      case shaderc_glsl_callable_shader:
+      case shaderc_glsl_task_shader:
+      case shaderc_glsl_mesh_shader:
+#endif
         return EShLangCount;
       case shaderc_glsl_default_vertex_shader:
         return EShLangVertex;
@@ -133,6 +173,24 @@ class StageDeducer {
         return EShLangTessControl;
       case shaderc_glsl_default_tess_evaluation_shader:
         return EShLangTessEvaluation;
+#ifdef NV_EXTENSIONS
+      case shaderc_glsl_default_raygen_shader:
+        return EShLangRayGenNV;
+      case shaderc_glsl_default_anyhit_shader:
+        return EShLangAnyHitNV;
+      case shaderc_glsl_default_closesthit_shader:
+        return EShLangClosestHitNV;
+      case shaderc_glsl_default_miss_shader:
+        return EShLangMissNV;
+      case shaderc_glsl_default_intersection_shader:
+        return EShLangIntersectNV;
+      case shaderc_glsl_default_callable_shader:
+        return EShLangCallableNV;
+      case shaderc_glsl_default_task_shader:
+        return EShLangTaskNV;
+      case shaderc_glsl_default_mesh_shader:
+        return EShLangMeshNV;
+#endif
       case shaderc_spirv_assembly:
         return EShLangCount;
     }
@@ -235,6 +293,26 @@ shaderc_util::Compiler::TargetEnv GetCompilerTargetEnv(shaderc_target_env env) {
   }
 
   return shaderc_util::Compiler::TargetEnv::Vulkan;
+}
+
+shaderc_util::Compiler::TargetEnvVersion GetCompilerTargetEnvVersion(
+    uint32_t version_number) {
+  using namespace shaderc_util;
+
+  if (static_cast<uint32_t>(Compiler::TargetEnvVersion::Vulkan_1_0) ==
+      version_number) {
+    return Compiler::TargetEnvVersion::Vulkan_1_0;
+  }
+  if (static_cast<uint32_t>(Compiler::TargetEnvVersion::Vulkan_1_1) ==
+      version_number) {
+    return Compiler::TargetEnvVersion::Vulkan_1_1;
+  }
+  if (static_cast<uint32_t>(Compiler::TargetEnvVersion::OpenGL_4_5) ==
+      version_number) {
+    return Compiler::TargetEnvVersion::OpenGL_4_5;
+  }
+
+  return Compiler::TargetEnvVersion::Default;
 }
 
 // Returns the Compiler::Limit enum for the given shaderc_limit enum.
@@ -395,7 +473,15 @@ void shaderc_compile_options_set_target_env(shaderc_compile_options_t options,
                                             shaderc_target_env target,
                                             uint32_t version) {
   options->target_env = target;
-  options->compiler.SetTargetEnv(GetCompilerTargetEnv(target), version);
+  options->compiler.SetTargetEnv(GetCompilerTargetEnv(target),
+                                 GetCompilerTargetEnvVersion(version));
+}
+
+void shaderc_compile_options_set_target_spirv(shaderc_compile_options_t options,
+                                              shaderc_spirv_version ver) {
+  // We made the values match, so we can get away with a static cast.
+  options->compiler.SetTargetSpirv(
+      static_cast<shaderc_util::Compiler::SpirvVersion>(ver));
 }
 
 void shaderc_compile_options_set_warnings_as_errors(
@@ -457,6 +543,16 @@ void shaderc_compile_options_set_hlsl_register_set_and_binding(
 void shaderc_compile_options_set_hlsl_functionality1(
     shaderc_compile_options_t options, bool enable) {
   options->compiler.EnableHlslFunctionality1(enable);
+}
+
+void shaderc_compile_options_set_invert_y(
+    shaderc_compile_options_t options, bool enable) {
+  options->compiler.EnableInvertY(enable);
+}
+
+void shaderc_compile_options_set_nan_clamp(shaderc_compile_options_t options,
+                                           bool enable) {
+  options->compiler.SetNanClamp(enable);
 }
 
 shaderc_compiler_t shaderc_compiler_initialize() {
@@ -595,8 +691,11 @@ shaderc_compilation_result_t shaderc_assemble_into_spv(
     std::string errors;
     const auto target_env = additional_options ? additional_options->target_env
                                                : shaderc_target_env_default;
+    const uint32_t target_env_version =
+        additional_options ? additional_options->target_env_version : 0;
     const bool assembling_succeeded = shaderc_util::SpirvToolsAssemble(
         GetCompilerTargetEnv(target_env),
+        GetCompilerTargetEnvVersion(target_env_version),
         {source_assembly, source_assembly + source_assembly_size},
         &assembling_output_data, &errors);
     result->num_errors = !assembling_succeeded;
